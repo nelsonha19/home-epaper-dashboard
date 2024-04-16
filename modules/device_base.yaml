@@ -1,0 +1,38 @@
+esphome:
+  name: "home-epaper-dashboard"
+  on_boot:
+    priority: 200.0
+    then:
+      - logger.log: "Boot started, updating display component..."
+      - component.update: eink_display
+      - delay: 5s  # Allows time for network and other components to initialize.
+      - homeassistant.service:
+          service: update_entity
+          data:
+            entity_id: sensor.signify_netherlands_b_v_sml003_temperature_2
+      - logger.log: "Requested Home Assistant to update temperature sensor."
+      - wait_until:
+          lambda: 'return id(indoor_temperature).has_state();'
+      - logger.log: "Temperature data is available, proceeding with UI update."
+      - lambda: |-
+          id(data_updated) = true;
+          ESP_LOGD("custom", "Initial sensor data received, setting flags and refreshing display...");
+          id(initial_data_received) = true;
+      - script.execute: update_screen
+
+esp32:
+  board: esp32dev
+  framework:
+    type: arduino
+
+# Pins for Waveshare ePaper ESP Board
+spi:
+  clk_pin: GPIO13
+  mosi_pin: GPIO14
+
+# Enable logging
+logger:
+# Enable Home Assistant API
+api:
+# Enable over the air updates
+ota:

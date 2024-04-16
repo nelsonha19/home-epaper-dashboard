@@ -1,0 +1,10 @@
+sensor:
+  # Indoor temperature sensor
+  - platform: homeassistant
+    entity_id: sensor.signify_netherlands_b_v_sml003_temperature_2
+    id: indoor_temperature
+    on_value:
+      then:
+        - logger.log: "Sensor data received, updating data_updated to true." 
+        - lambda: 'id(data_updated) = true;'
+        - script.execute: update_screen

@@ -1,0 +1,54 @@
+sensor:
+  - platform: homeassistant
+    id: forecast_temp_max_0
+    entity_id: sensor.forecast_temp_max_0
+  - platform: homeassistant
+    id: forecast_temp_max_1
+    entity_id: sensor.forecast_temp_max_1
+  - platform: homeassistant
+    id: forecast_temp_max_2
+    entity_id: sensor.forecast_temp_max_2
+  - platform: homeassistant
+    id: forecast_temp_max_3
+    entity_id: sensor.forecast_temp_max_3
+  - platform: homeassistant
+    id: forecast_temp_min_0
+    entity_id: sensor.forecast_temp_min_0
+  - platform: homeassistant
+    id: forecast_temp_min_1
+    entity_id: sensor.forecast_temp_min_1
+  - platform: homeassistant
+    id: forecast_temp_min_2
+    entity_id: sensor.forecast_temp_min_2
+  - platform: homeassistant
+    id: forecast_temp_min_3
+    entity_id: sensor.forecast_temp_min_3
+
+text_sensor:
+  #Add the weather.temperature entity from Home Assistant
+  - platform: homeassistant
+    id: current_weather_icon
+    entity_id: weather.temperature
+    attribute: icon
+
+  # is sun below or above horizon
+  - platform: homeassistant
+    id: sun_state
+    entity_id: sun.sun
+
+  # BOM Weather Sensor
+  - platform: homeassistant
+    id: sensor_forecast_mdi_icon_0
+    entity_id: sensor.forecast_mdi_icon_0
+
+  - platform: homeassistant
+    id: sensor_forecast_mdi_icon_1
+    entity_id: sensor.forecast_mdi_icon_1
+
+  - platform: homeassistant
+    id: sensor_forecast_mdi_icon_2
+    entity_id: sensor.forecast_mdi_icon_2
+
+  - platform: homeassistant
+    id: sensor_forecast_mdi_icon_3
+    entity_id: sensor.forecast_mdi_icon_3

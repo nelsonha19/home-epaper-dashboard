@@ -1,0 +1,23 @@
+
+globals:
+  - id: initial_data_received
+    type: bool
+    restore_value: no
+    initial_value: 'false'
+  - id: data_updated
+    type: bool
+    restore_value: no
+    initial_value: 'false'
+
+# Define colors - Currently only B/W Support on my model for ESPHome
+color:
+  - id: color_black
+    red: 100%
+    green: 100%
+    blue: 100%
+    white: 100% 
+  - id: color_white
+    red: 0%
+    green: 0%
+    blue: 0%
+    white: 0%
