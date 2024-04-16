@@ -1,0 +1,293 @@
+# Nelsons E-Paper Dashboard
+# For Home Assistant and ESPHome
+esphome:
+  name: "home-epaper-dashboard"
+  on_boot:
+    priority: 200.0
+    then:
+      - logger.log: "Boot started, updating display component..."
+      - component.update: eink_display
+      - delay: 5s  # Allows time for network and other components to initialize.
+      - homeassistant.service:
+          service: update_entity
+          data:
+            entity_id: sensor.signify_netherlands_b_v_sml003_temperature_2
+      - logger.log: "Requested Home Assistant to update temperature sensor."
+      - wait_until:
+          lambda: 'return id(indoor_temperature).has_state();'
+      - logger.log: "Temperature data is available, proceeding with UI update."
+      - lambda: |-
+          id(data_updated) = true;
+          ESP_LOGD("custom", "Initial sensor data received, setting flags and refreshing display...");
+          id(initial_data_received) = true;
+      - script.execute: update_screen
+
+esp32:
+  board: esp32dev
+  framework:
+    type: arduino
+
+# Enable logging
+logger:
+# Enable Home Assistant API
+api:
+ota:
+# Wifi information
+wifi:
+  ssid: !secret wifi_ssid
+  password: !secret wifi_password
+
+globals:
+  - id: initial_data_received
+    type: bool
+    restore_value: no
+    initial_value: 'false'
+  - id: data_updated
+    type: bool
+    restore_value: no
+    initial_value: 'false'
+
+# Arrange fonts
+font:
+  - file: 'fonts/NotoSans-Regular.ttf'
+    id: font_regular_small
+    size: 16
+  - file: 'fonts/NotoSans-Regular.ttf'
+    id: font_regular_medium
+    size: 32
+  - file: 'fonts/NotoSans-Bold.ttf'
+    id: font_bold_medium
+    size: 32
+    glyphs: [
+      ' ', 'A', 'B', 'C', 'D', 'E', 'F', 'G', 'H', 'I', 'J', 'K', 'L', 'M', 
+      'N', 'O', 'P', 'Q', 'R', 'S', 'T', 'U', 'V', 'W', 'X', 'Y', 'Z',
+      'a', 'b', 'c', 'd', 'e', 'f', 'g', 'h', 'i', 'j', 'k', 'l', 'm', 
+      'n', 'o', 'p', 'q', 'r', 's', 't', 'u', 'v', 'w', 'x', 'y', 'z',
+      '0', '1', '2', '3', '4', '5', '6', '7', '8', '9', '&'
+    ]
+  - file: 'fonts/NotoSans-Regular.ttf'
+    id: font_regular_large
+    size: 48
+    glyphs: ['W', 'E', 'A', 'T', 'H', 'R', ' ']
+  - file: 'fonts/NotoSans-Bold.ttf'
+    id: font_bold_large
+    size: 52
+
+  # Include Material Design Icons font
+  # Thanks to https://community.home-assistant.io/t/display-materialdesign-icons-on-esphome-attached-to-screen/199790/16
+  - file: 'fonts/materialdesignicons-webfont.ttf'
+    id: font_mdi_large
+    size: 96
+    glyphs: &mdi-weather-glyphs
+      - "\U000F0590" # mdi-weather-cloudy
+      - "\U000F0F2F" # mdi-weather-cloudy-alert
+      - "\U000F0E6E" # mdi-weather-cloudy-arrow-right
+      - "\U000F0591" # mdi-weather-fog
+      - "\U000F0592" # mdi-weather-hail
+      - "\U000F0F30" # mdi-weather-hazy
+      - "\U000F0898" # mdi-weather-hurricane
+      - "\U000F0593" # mdi-weather-lightning
+      - "\U000F067E" # mdi-weather-lightning-rainy
+      - "\U000F0594" # mdi-weather-night
+      - "\U000F0F31" # mdi-weather-night-partly-cloudy
+      - "\U000F0595" # mdi-weather-partly-cloudy
+      - "\U000F0F32" # mdi-weather-partly-lightning
+      - "\U000F0F33" # mdi-weather-partly-rainy
+      - "\U000F0F34" # mdi-weather-partly-snowy
+      - "\U000F0F35" # mdi-weather-partly-snowy-rainy
+      - "\U000F0596" # mdi-weather-pouring
+      - "\U000F0597" # mdi-weather-rainy
+      - "\U000F0598" # mdi-weather-snowy
+      - "\U000F0F36" # mdi-weather-snowy-heavy
+      - "\U000F067F" # mdi-weather-snowy-rainy
+      - "\U000F0599" # mdi-weather-sunny
+      - "\U000F0F37" # mdi-weather-sunny-alert
+      - "\U000F14E4" # mdi-weather-sunny-off
+      - "\U000F059A" # mdi-weather-sunset
+      - "\U000F059B" # mdi-weather-sunset-down
+      - "\U000F059C" # mdi-weather-sunset-up
+      - "\U000F0F38" # mdi-weather-tornado
+      - "\U000F059D" # mdi-weather-windy
+      - "\U000F059E" # mdi-weather-windy-variant
+  - file: 'fonts/materialdesignicons-webfont.ttf'
+    id: font_mdi_medium
+    size: 36
+    glyphs: *mdi-weather-glyphs
+
+# Use Home Assistant's clock
+time:
+  - platform: homeassistant
+    id: homeassistant_time
+
+sensor:
+  # Indoor temperature sensor
+  - platform: homeassistant
+    entity_id: sensor.signify_netherlands_b_v_sml003_temperature_2
+    id: indoor_temperature
+    on_value:
+      then:
+        - logger.log: "Sensor data received, updating data_updated to true." 
+        - lambda: 'id(data_updated) = true;'
+        - script.execute: update_screen
+
+
+  - platform: homeassistant
+    id: forecast_temp_max_0
+    entity_id: sensor.forecast_temp_max_0
+  - platform: homeassistant
+    id: forecast_temp_max_1
+    entity_id: sensor.forecast_temp_max_1
+  - platform: homeassistant
+    id: forecast_temp_max_2
+    entity_id: sensor.forecast_temp_max_2
+  - platform: homeassistant
+    id: forecast_temp_max_3
+    entity_id: sensor.forecast_temp_max_3
+  - platform: homeassistant
+    id: forecast_temp_min_0
+    entity_id: sensor.forecast_temp_min_0
+  - platform: homeassistant
+    id: forecast_temp_min_1
+    entity_id: sensor.forecast_temp_min_1
+  - platform: homeassistant
+    id: forecast_temp_min_2
+    entity_id: sensor.forecast_temp_min_2
+  - platform: homeassistant
+    id: forecast_temp_min_3
+    entity_id: sensor.forecast_temp_min_3
+
+text_sensor:
+  
+  #Add the weather.temperature entity from Home Assistant
+  - platform: homeassistant
+    id: current_weather_icon
+    entity_id: weather.temperature
+    attribute: icon
+
+  # is sun below or above horizon
+  - platform: homeassistant
+    id: sun_state
+    entity_id: sun.sun
+
+  # BOM Weather Sensor
+  - platform: homeassistant
+    id: sensor_forecast_mdi_icon_0
+    entity_id: sensor.forecast_mdi_icon_0
+
+  - platform: homeassistant
+    id: sensor_forecast_mdi_icon_1
+    entity_id: sensor.forecast_mdi_icon_1
+
+  - platform: homeassistant
+    id: sensor_forecast_mdi_icon_2
+    entity_id: sensor.forecast_mdi_icon_2
+
+  - platform: homeassistant
+    id: sensor_forecast_mdi_icon_3
+    entity_id: sensor.forecast_mdi_icon_3
+
+# Define colors - Currently only B/W Support on my model for ESPHome
+color:
+  - id: color_black
+    red: 100%
+    green: 100%
+    blue: 100%
+    white: 100% 
+  - id: color_white
+    red: 0%
+    green: 0%
+    blue: 0%
+    white: 0%
+
+# Pins for Waveshare ePaper ESP Board
+spi:
+  clk_pin: GPIO13
+  mosi_pin: GPIO14
+
+# Display Function
+display:
+  - platform: waveshare_epaper
+    id: eink_display
+    cs_pin: GPIO15
+    dc_pin: GPIO27
+    busy_pin: GPIO25
+    reset_pin: GPIO26
+    reset_duration: 2ms
+    model: 7.50in-bV3
+    update_interval: never
+    rotation: 90°
+    lambda: |-
+      it.fill(color_black);
+      it.printf(10, 30, id(font_bold_large), color_white, TextAlign::TOP_LEFT, "WEATHER");
+      it.printf(10, 80, id(font_bold_medium), color_white, TextAlign::TOP_LEFT, "hello TEMPS");
+
+      if (id(initial_data_received)) {
+        it.printf(10, 120, id(font_regular_medium), color_white, TextAlign::TOP_LEFT, "%2.1f°C", id(indoor_temperature).state);
+
+       // Map the weather conditions to their corresponding Material Design Icons
+        std::map<std::string, std::string> weather_icon_map = {
+          {"mdi:weather-sunny", "\U000F0599"}, // mdi-weather-sunny
+          {"mdi:weather-night", "\U000F0594"}, // mdi-weather-night
+          {"mdi:weather-mostly_sunny", "\U000F0594"}, // mdi-weather-partly-cloudy
+          {"mdi:weather-partly_cloudy", "\U000F0594"}, // mdi-weather-partly-cloudy
+          {"mdi:weather-cloudy", "\U000F0590"}, // mdi-weather-cloudy
+          {"mdi:weather-overcast", "\U000F0590"}, // mdi-weather-cloudy
+          {"mdi:weather-fog", "\U000F0591"}, // mdi-weather-fog
+          {"mdi:weather-showers", "\U000F0597"}, // mdi-weather-rainy
+          {"mdi:weather-rainy", "\U000F0598"}, // mdi-weather-pouring
+          {"mdi:weather-dust", "\U000F0592"}, // mdi-weather-windy
+          {"mdi:weather-frost", "\U000F02DC"}, // mdi-snowflake
+          {"mdi:weather-snow", "\U000F02DC"}, // mdi-snowflake
+          {"mdi:weather-storm", "\U000F059D"}, // mdi-weather-lightning
+          {"mdi:weather-light_showers", "\U000F0597"}, // mdi-weather-rainy
+          {"mdi:weather-heavy_showers", "\U000F0598"}, // mdi-weather-pouring
+          {"mdi:weather-tropical_cyclone", "\U000F0898"}, // mdi-weather-hurricane
+        };
+
+        // Get the state of the sun
+        std::string sun_state_str = id(sun_state)->state;
+
+        // Log the value of current_weather_icon
+        ESP_LOGD("main", "Current weather icon: %s", id(current_weather_icon).state.c_str());
+
+        // If the sun is below the horizon, show the night icon
+        std::string weather_icon;
+        if (sun_state_str == "below_horizon") {
+          if (id(current_weather_icon).state == "mdi:weather-sunny"){
+            weather_icon = "mdi:weather-night";
+          }
+        } else {
+          // Get the icon from the weather.temperature entity
+          weather_icon = id(current_weather_icon).state;
+        }
+
+        ESP_LOGD("main", "Weather icon: %s", weather_icon.c_str());
+
+        // Display the icon
+        it.printf(400, 120, id(font_mdi_medium), color_white, TextAlign::TOP_RIGHT, "%s", weather_icon_map[weather_icon.c_str()].c_str());
+
+        // Get the current date and time
+        auto time = id(homeassistant_time).now();
+
+        // Display the forecast and icon for each day
+        it.printf(10, 200, id(font_regular_small), color_white, TextAlign::TOP_LEFT, "TODAY: Max %2.1f°C, Min %2.1f°C", id(forecast_temp_max_0).state, id(forecast_temp_min_0).state);
+        it.printf(10, 220, id(font_regular_small), color_white, TextAlign::TOP_LEFT, "%02d %s: Max %2.1f°C, Min %2.1f°C", time.day_of_month + 1, time.strftime("%b").c_str(), id(forecast_temp_max_1).state, id(forecast_temp_min_1).state);
+        it.printf(10, 240, id(font_regular_small), color_white, TextAlign::TOP_LEFT, "%02d %s: Max %2.1f°C, Min %2.1f°C", time.day_of_month + 2, time.strftime("%b").c_str(), id(forecast_temp_max_2).state, id(forecast_temp_min_2).state);
+        it.printf(10, 260, id(font_regular_small), color_white, TextAlign::TOP_LEFT, "%02d %s: Max %2.1f°C, Min %2.1f°C", time.day_of_month + 3, time.strftime("%b").c_str(), id(forecast_temp_max_3).state, id(forecast_temp_min_3).state);
+
+        it.printf(400, 200, id(font_mdi_medium), color_white, TextAlign::TOP_RIGHT, "%s", weather_icon_map[id(sensor_forecast_mdi_icon_0).state.c_str()].c_str());
+        it.printf(400, 220, id(font_mdi_medium), color_white, TextAlign::TOP_RIGHT, "%s", weather_icon_map[id(sensor_forecast_mdi_icon_1).state.c_str()].c_str());
+        it.printf(400, 240, id(font_mdi_medium), color_white, TextAlign::TOP_RIGHT, "%s", weather_icon_map[id(sensor_forecast_mdi_icon_2).state.c_str()].c_str());
+        it.printf(400, 260, id(font_mdi_medium), color_white, TextAlign::TOP_RIGHT, "%s", weather_icon_map[id(sensor_forecast_mdi_icon_3).state.c_str()].c_str());
+        
+        ESP_LOGD("display", "Display updated with temperature data.");
+      } else {
+        it.printf(200, 400, id(font_regular_medium), color_white, TextAlign::CENTER, "Waiting for data...");
+        ESP_LOGW("display", "Display update called without data.");
+      }
+
+script:
+  - id: update_screen
+    then:
+      - logger.log: "Executing update_screen script."
+      - component.update: eink_display
