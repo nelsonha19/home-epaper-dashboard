@@ -1,4 +1,11 @@
 sensor:
+  # Current temperature
+  - platform: homeassistant
+    id: current_weather_temp
+    entity_id: weather.temperature
+    attribute: temperature
+
+  # Forecast
   - platform: homeassistant
     id: forecast_temp_max_0
     entity_id: sensor.forecast_temp_max_0

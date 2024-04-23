@@ -36,12 +36,25 @@ display:
     rotation: 90°
     lambda: |-
       it.fill(color_black);
-      it.printf(10, 30, id(font_bold_large), color_white, TextAlign::TOP_LEFT, "WEATHER");
-      it.printf(10, 80, id(font_bold_medium), color_white, TextAlign::TOP_LEFT, "TEMPS");
+      
+      //// Draw lines
+      //for (int x = 0; x < it.get_width(); x += 10) {
+      //  for (int y = 0; y < it.get_height(); y += 10) {
+      //    it.draw_pixel_at(x, y, color_white);
+      //  }
+      //}
+      //// Draw labels
+      //for (int x = 0; x < it.get_width(); x += 50) {
+      //  it.printf(x, 0, id(font_regular_small), color_white, TextAlign::TOP_LEFT, "%d", x);
+      //}
+      //for (int y = 0; y < it.get_height(); y += 50) {
+      //  it.printf(0, y, id(font_regular_small), color_white, TextAlign::TOP_LEFT, "%d", y);
+      //}
+
+      // Headings
+      it.printf(30, 50, id(font_bold_large), color_white, TextAlign::TOP_LEFT, "WEATHER");
 
       if (id(initial_data_received)) {
-        it.printf(10, 120, id(font_regular_medium), color_white, TextAlign::TOP_LEFT, "%2.1f°C", id(indoor_temperature).state);
-
        // Map the weather conditions to their corresponding Material Design Icons
         //  https://pictogrammers.com/library/mdi/
         std::map<std::string, std::string> weather_icon_map = {
@@ -64,41 +77,92 @@ display:
         };
 
         // Get the state of the sun
-        std::string sun_state_str = id(sun_state)->state;
+        //std::string sun_state_str = id(sun_state)->state;
 
-        // Log the value of current_weather_icon
-        ESP_LOGD("main", "Current weather icon: %s", id(current_weather_icon).state.c_str());
+        //// Log the value of current_weather_icon
+        //ESP_LOGD("main", "Current weather icon: %s", id(current_weather_icon).state.c_str());
 
-        // If the sun is below the horizon, show the night icon
-        std::string weather_icon;
-        if (sun_state_str == "below_horizon") {
-          if (id(current_weather_icon).state == "mdi:weather-sunny"){
-            weather_icon = "mdi:weather-night";
+        //// If the sun is below the horizon, show the night icon
+        //std::string weather_icon;
+        //if (sun_state_str == "below_horizon") {
+        //  if (id(current_weather_icon).state == "mdi:weather-sunny"){
+        //    weather_icon = "mdi:weather-night";
+        //  }
+        //} else {
+        //  // Get the icon from the weather.temperature entity
+        //  weather_icon = id(current_weather_icon).state;
+        //}
+
+        // Define the helper function inside the lambda
+        auto day_of_week_to_string = [](int day_of_week) -> std::string {
+          switch (day_of_week) {
+            case 0: return "Mon";
+            case 1: return "Tue";
+            case 2: return "Wed";
+            case 3: return "Thu";
+            case 4: return "Fri";
+            case 5: return "Sat";
+            case 6: return "Sun";
+            default: return "";
           }
-        } else {
-          // Get the icon from the weather.temperature entity
-          weather_icon = id(current_weather_icon).state;
-        }
+        };
 
-        ESP_LOGD("main", "Weather icon: %s", weather_icon.c_str());
-
-        // Display the icon
-        it.printf(400, 120, id(font_mdi_medium), color_white, TextAlign::TOP_RIGHT, "%s", weather_icon_map[weather_icon.c_str()].c_str());
-
+        // CURRENT TEMPERATURE
+        it.printf(370, 60, id(font_mdi_large), color_white, TextAlign::CENTER, "%s", weather_icon_map[id(current_weather_icon).state.c_str()].c_str());
+        it.printf(370, 120, id(font_regular_large), color_white, TextAlign::CENTER, "%2.1f°C", id(current_weather_temp).state);
+        
         // Get the current date and time
         auto time = id(homeassistant_time).now();
 
-        // Display the forecast and icon for each day
-        it.printf(10, 200, id(font_regular_small), color_white, TextAlign::TOP_LEFT, "TODAY: Max %2.1f°C, Min %2.1f°C", id(forecast_temp_max_0).state, id(forecast_temp_min_0).state);
-        it.printf(10, 220, id(font_regular_small), color_white, TextAlign::TOP_LEFT, "%02d %s: Max %2.1f°C, Min %2.1f°C", time.day_of_month + 1, time.strftime("%b").c_str(), id(forecast_temp_max_1).state, id(forecast_temp_min_1).state);
-        it.printf(10, 240, id(font_regular_small), color_white, TextAlign::TOP_LEFT, "%02d %s: Max %2.1f°C, Min %2.1f°C", time.day_of_month + 2, time.strftime("%b").c_str(), id(forecast_temp_max_2).state, id(forecast_temp_min_2).state);
-        it.printf(10, 260, id(font_regular_small), color_white, TextAlign::TOP_LEFT, "%02d %s: Max %2.1f°C, Min %2.1f°C", time.day_of_month + 3, time.strftime("%b").c_str(), id(forecast_temp_max_3).state, id(forecast_temp_min_3).state);
+        // Calculate the day of the week for the next three days
+        int tomorrow_day_of_week = (time.day_of_week + 1) % 7;
+        int day_after_tomorrow_day_of_week = (time.day_of_week + 2) % 7;
+        int two_days_after_tomorrow_day_of_week = (time.day_of_week + 3) % 7;
 
-        it.printf(400, 200, id(font_mdi_medium), color_white, TextAlign::TOP_RIGHT, "%s", weather_icon_map[id(sensor_forecast_mdi_icon_0).state.c_str()].c_str());
-        it.printf(400, 220, id(font_mdi_medium), color_white, TextAlign::TOP_RIGHT, "%s", weather_icon_map[id(sensor_forecast_mdi_icon_1).state.c_str()].c_str());
-        it.printf(400, 240, id(font_mdi_medium), color_white, TextAlign::TOP_RIGHT, "%s", weather_icon_map[id(sensor_forecast_mdi_icon_2).state.c_str()].c_str());
-        it.printf(400, 260, id(font_mdi_medium), color_white, TextAlign::TOP_RIGHT, "%s", weather_icon_map[id(sensor_forecast_mdi_icon_3).state.c_str()].c_str());
-        
+        // Convert the day of the week to a string
+        std::string tomorrow_str = day_of_week_to_string(tomorrow_day_of_week);
+        std::string day_after_tomorrow_str = day_of_week_to_string(day_after_tomorrow_day_of_week);
+        std::string two_days_after_tomorrow_str = day_of_week_to_string(two_days_after_tomorrow_day_of_week);
+
+        int yForecastDay = 220; 
+        int yMaxTemp = 170;
+        int yMinTemp = 190;
+        int yIcon = 180;
+
+        // FORECAST TEMPERATURE
+        // TODAY
+        it.printf(50, yIcon, id(font_mdi_medium), color_white, TextAlign::CENTER, "%s", weather_icon_map[id(sensor_forecast_mdi_icon_0).state.c_str()].c_str());
+        it.printf(70, yForecastDay, id(font_bold_medium), color_white, TextAlign::CENTER, "TODAY");
+        if (!isnan(id(forecast_temp_min_0).state)) {
+          it.printf(100, yMaxTemp, id(font_regular_small), color_white, TextAlign::CENTER, "%2.1f°C", id(forecast_temp_max_0).state);
+          it.printf(100, yMinTemp, id(font_regular_small), color_white, TextAlign::CENTER, "%2.1f°C", id(forecast_temp_min_0).state);
+        } else {
+          it.printf(100, yMaxTemp+10, id(font_regular_small), color_white, TextAlign::CENTER, "%2.1f°C", id(forecast_temp_max_0).state);
+        }
+        // TODAY + 1
+        it.printf(165, yIcon, id(font_mdi_medium), color_white, TextAlign::CENTER, "%s", weather_icon_map[id(sensor_forecast_mdi_icon_1).state.c_str()].c_str());
+        it.printf(190, yForecastDay, id(font_bold_medium), color_white, TextAlign::CENTER, "%s", tomorrow_str.c_str());
+        it.printf(215, yMaxTemp, id(font_regular_small), color_white, TextAlign::CENTER, "%2.1f°C", id(forecast_temp_max_1).state);
+        it.printf(215, yMinTemp, id(font_regular_small), color_white, TextAlign::CENTER, "%2.1f°C", id(forecast_temp_min_1).state);
+        // TODAY + 2
+        it.printf(275, yIcon, id(font_mdi_medium), color_white, TextAlign::CENTER, "%s", weather_icon_map[id(sensor_forecast_mdi_icon_2).state.c_str()].c_str());
+        it.printf(300, yForecastDay, id(font_bold_medium), color_white, TextAlign::CENTER, "%s", day_after_tomorrow_str.c_str());
+        it.printf(325, yMaxTemp, id(font_regular_small), color_white, TextAlign::CENTER, "%2.1f°C", id(forecast_temp_max_2).state);
+        it.printf(325, yMinTemp, id(font_regular_small), color_white, TextAlign::CENTER, "%2.1f°C", id(forecast_temp_min_2).state);
+        // TODAY + 3
+        it.printf(390, yIcon, id(font_mdi_medium), color_white, TextAlign::CENTER, "%s", weather_icon_map[id(sensor_forecast_mdi_icon_3).state.c_str()].c_str());
+        it.printf(410, yForecastDay, id(font_bold_medium), color_white, TextAlign::CENTER, "%s", two_days_after_tomorrow_str.c_str());
+        it.printf(440, yMaxTemp, id(font_regular_small), color_white, TextAlign::CENTER, "%2.1f°C", id(forecast_temp_max_3).state);
+        it.printf(440, yMinTemp, id(font_regular_small), color_white, TextAlign::CENTER, "%2.1f°C", id(forecast_temp_min_3).state);
+
+        // Indoor Temperatures
+        // it.printf(150, 280, id(font_regular_medium), color_white, TextAlign::CENTER, "Living Room");
+        // it.printf(150, 320, id(font_regular_medium), color_white, TextAlign::CENTER, "%2.1f°C", id(indoor_living_room).state);
+
+        // it.printf(350, 280, id(font_regular_medium), color_white, TextAlign::CENTER, "Study Nook");
+        // it.printf(350, 320, id(font_regular_medium), color_white, TextAlign::CENTER, "%2.1f°C", id(indoor_study_nook).state);
+
+
         ESP_LOGD("display", "Display updated with temperature data.");
       } else {
         it.printf(200, 400, id(font_regular_medium), color_white, TextAlign::CENTER, "Waiting for data...");
